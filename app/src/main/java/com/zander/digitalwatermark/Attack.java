@@ -14,14 +14,21 @@ public class Attack {
     public final static double MEAN_FACTOR = 2.0;
     public final static int POISSON_NOISE_TYPE = 2;
     public final static int GAUSSION_NOISE_TYPE = 1;
-    public final static  double _mNoiseFactor = 25;
+    public final static double _mNoiseFactor = 25;
 
     static Bitmap cutBitmap(Bitmap bitmap) {
         Bitmap cpbitmap = bitmap.copy(bitmap.getConfig(), true);
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
         // 剪切攻击
-        for(int i = 0; i < 400; ++i) {
-            for(int j = 0; j < 400; ++j) {
-                cpbitmap.setPixel(j, i, Color.WHITE);
+        for (int l = 0; l < 5; l++) {
+            int ranWidth = (int) (Math.random() * (width - 160));
+            int ranHeight = (int) (Math.random() * (height - 160));
+            for (int i = ranWidth; i < ranWidth + 150; ++i) {
+                for (int j = ranHeight; j < ranHeight + 150; ++j) {
+                    cpbitmap.setPixel(i, j, Color.WHITE);
+                }
             }
         }
         return cpbitmap;
@@ -50,8 +57,8 @@ public class Attack {
         int size = (int) (width * height * (1 - SNR));
 
         for (int i = 0; i < size; ++i) {
-            int row = (int)(Math.random() * height);
-            int col = (int)(Math.random() * width);
+            int row = (int) (Math.random() * height);
+            int col = (int) (Math.random() * width);
             spBitmap.setPixel(col, row, (255 << 24) | (255 << 16) | (255 << 8) | 255);
         }
 
@@ -73,17 +80,17 @@ public class Attack {
         Random random = new Random();
         int ta, tr, tg, tb;
 
-        for(int row = 0; row < height; row++) {
-            for(int col = 0; col < width; col++) {
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
                 ta = (nBitmap.getPixel(col, row) >> 24) & 0xff;
                 tr = (nBitmap.getPixel(col, row) >> 16) & 0xff;
                 tg = (nBitmap.getPixel(col, row) >> 8) & 0xff;
                 tb = nBitmap.getPixel(col, row) & 0xff;
-                if(noiseType == POISSON_NOISE_TYPE) {
+                if (noiseType == POISSON_NOISE_TYPE) {
                     tr = clamp(addPNoise(tr, random));
                     tg = clamp(addPNoise(tg, random));
                     tb = clamp(addPNoise(tb, random));
-                } else if(noiseType == GAUSSION_NOISE_TYPE) {
+                } else if (noiseType == GAUSSION_NOISE_TYPE) {
                     tr = clamp(addGNoise(tr, random));
                     tg = clamp(addGNoise(tg, random));
                     tb = clamp(addGNoise(tb, random));
@@ -99,10 +106,10 @@ public class Attack {
         int v, ran;
         boolean inRange = false;
         do {
-            ran = (int)Math.round(random.nextGaussian()*_mNoiseFactor);
+            ran = (int) Math.round(random.nextGaussian() * _mNoiseFactor);
             v = tr + ran;
             // check whether it is valid single channel value
-            inRange = (v>=0 && v<=255);
+            inRange = (v >= 0 && v <= 255);
             if (inRange) tr = v;
         } while (!inRange);
         return tr;
@@ -123,6 +130,6 @@ public class Attack {
             p *= random.nextDouble();
         } while (p >= L);
         double retValue = Math.max((pixel + (k - 1) / MEAN_FACTOR - _mNoiseFactor), 0);
-        return (int)retValue;
+        return (int) retValue;
     }
 }

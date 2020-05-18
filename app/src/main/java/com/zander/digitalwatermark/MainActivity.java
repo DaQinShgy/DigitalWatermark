@@ -14,7 +14,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.yoojia.qrcode.qrcode.QRCodeDecoder;
@@ -74,7 +76,8 @@ public class MainActivity extends AppCompatActivity {
                     //iv_adding_watermark.setImageBitmap(testBitmap);
                     break;
                 case ABSTRACT_WATERMARK_PLAIN:
-                    ((ImageView) findViewById(R.id.iv_waterMark2)).setImageBitmap((Bitmap) msg.obj);
+                    resultBitmap = (Bitmap) msg.obj;
+                    ((ImageView) findViewById(R.id.iv_waterMark2)).setImageBitmap(resultBitmap.copy(resultBitmap.getConfig(), true));
                     AbstractPd.dismiss();
                     break;
                 default:
@@ -85,6 +88,10 @@ public class MainActivity extends AppCompatActivity {
 
     private Bitmap oriBitmap;
     private Bitmap simpleWatermarkBitmap;
+    private Bitmap resultBitmap;
+
+    private int mMarkCount = 0;
+    private int mInverseCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,8 +115,8 @@ public class MainActivity extends AppCompatActivity {
             }
             hideW = new HideW(0, WATERMARK_SIZE);
 
-            simpleWatermarkBitmap = Watermark.generateWatermarkPlain(MainActivity.this);
-            ((ImageView) findViewById(R.id.iv_waterMark0)).setImageBitmap(simpleWatermarkBitmap);
+            simpleWatermarkBitmap = Watermark.generateWatermarkPlain();
+            ((ImageView) findViewById(R.id.iv_waterMark0)).setImageBitmap(Watermark.generateWatermarkPlain());
 
             // 原始图片
             oriBitmap = BitmapFactory.decodeFile(oriPath);
@@ -119,7 +126,9 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btn_scramble).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                simpleWatermarkBitmap = Watermark.scramble(simpleWatermarkBitmap, 1);
+                mMarkCount++;
+                ((TextView) findViewById(R.id.tv_count)).setText("置乱次数：" + mMarkCount);
+                Watermark.arnold(simpleWatermarkBitmap, 1);
                 ((ImageView) findViewById(R.id.iv_waterMark1)).setImageBitmap(simpleWatermarkBitmap);
             }
         });
@@ -127,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // 添加水印!
+                mInverseCount = mMarkCount;
                 AddPd = ProgressDialog.show(MainActivity.this, "提示", "嵌入水印中，请稍后……");
                 AddWatermarkThread addWatermarkThread = new AddWatermarkThread(oriBitmap, simpleWatermarkBitmap);
                 addWatermarkThread.start();
@@ -143,6 +153,18 @@ public class MainActivity extends AppCompatActivity {
                 // 提取图片中的水印信息
                 AbstractWatermarkThread abstractWatermarkThread = new AbstractWatermarkThread();
                 abstractWatermarkThread.start();
+            }
+        });
+        findViewById(R.id.btn_inverse).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mInverseCount-- > 0) {
+                    Watermark.inverseArnold(resultBitmap, 1);
+                    ((TextView) findViewById(R.id.tv_count_inverse)).setText("逆置乱次数：" + (mMarkCount - mInverseCount));
+                    ((ImageView) findViewById(R.id.iv_waterMark3)).setImageBitmap(resultBitmap);
+                } else {
+                    Toast.makeText(MainActivity.this, "逆向到头了", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -176,6 +198,7 @@ public class MainActivity extends AppCompatActivity {
                     handler.sendMessage(msg);
                 } else { // 直接返回解析水印的图片
                     Bitmap qrcode = AbstractWatermarkBitmap(dubiousBitmap);
+                    Watermark.inverseArnold(qrcode, mMarkCount);
                     msg.what = ABSTRACT_WATERMARK_PLAIN;
                     msg.obj = qrcode;
                     handler.sendMessage(msg);
@@ -197,10 +220,15 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             Bitmap finalBitmap = hideW.hideinfo(oriBitmap, qrcode);
-            // 保存剪切攻击后的图片
-            finalBitmap = cutBitmap(finalBitmap);
-            // 保存添加椒盐噪声后的图片
-            finalBitmap = addSaltAndPepperNoise(finalBitmap, 0.99f);
+
+            if (((CheckBox) findViewById(R.id.cb0)).isChecked()) {
+                // 保存剪切攻击后的图片
+                finalBitmap = cutBitmap(finalBitmap);
+            }
+            if (((CheckBox) findViewById(R.id.cb1)).isChecked()) {
+                // 保存添加椒盐噪声后的图片
+                finalBitmap = addSaltAndPepperNoise(finalBitmap, 0.98f);
+            }
 
             Message msg = new Message();
             msg.what = ADD_WATERMARK;

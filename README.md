@@ -11,3 +11,6 @@
 
 * [NextQRCode](https://github.com/yoojia/NextQRCode) - 基于ZXing Android实现的QRCode扫描支持库
 * [Android Studio](https://developer.android.com/studio/index.html) - The Official IDE for Android
+
+============================================================================================================
+以上是原项目的README，在原项目的基础上加了置乱水印与逆置乱水印的算法

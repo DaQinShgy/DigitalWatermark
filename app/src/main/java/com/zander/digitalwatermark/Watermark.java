@@ -19,6 +19,7 @@ import com.github.yoojia.qrcode.qrcode.QRCodeEncoder;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
@@ -56,7 +57,7 @@ class Watermark {
         return bitmap;
     }
 
-    static Bitmap generateWatermarkPlain(Context context) {
+    static Bitmap generateWatermarkPlain() {
         //1、创建一个bitmap，并放入画布
         Bitmap bitmap = Bitmap.createBitmap(120, 120, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -75,6 +76,61 @@ class Watermark {
 
         return bitmap;
 //        return RotateBitmap(bitmap, -45);
+    }
+
+    /**
+     * 变换
+     */
+    public static Bitmap arnold(Bitmap bitmap, int count) {
+        int SIZE = bitmap.getWidth();
+        int[] origin = new int[SIZE * SIZE];
+        bitmap.getPixels(origin, 0, SIZE, 0, 0, SIZE, SIZE);
+        int[] dest = new int[SIZE * SIZE];
+        int oldY, oldX, newY, newX;
+        while (count > 0) {
+            for (int index = 0; index < origin.length; index++) {
+                oldX = index % SIZE;
+                oldY = index / SIZE;
+                newX = (oldX + oldY) % SIZE;
+                newY = (oldX + 2 * oldY) % SIZE;
+                dest[newY * SIZE + newX] = origin[index];
+            }
+            count--;
+            origin = Arrays.copyOf(dest, dest.length);
+        }
+        bitmap.setPixels(dest, 0, SIZE, 0, 0, SIZE, SIZE);
+        return bitmap;
+    }
+
+    /**
+     * 逆变换
+     */
+    public static Bitmap inverseArnold(Bitmap bitmap, int count) {
+        int SIZE = bitmap.getWidth();
+        int[] origin = new int[SIZE * SIZE];
+        bitmap.getPixels(origin, 0, SIZE, 0, 0, SIZE, SIZE);
+        int[] dest = new int[SIZE * SIZE];
+        int oldY, oldX, newY, newX;
+        while (count > 0) {
+            for (int index = 0; index < origin.length; index++) {
+                oldX = index % SIZE;
+                oldY = index / SIZE;
+                newY = mod((oldY - oldX), SIZE);
+                newX = mod((2 * oldX - oldY), SIZE);
+                dest[newY * SIZE + newX] = origin[index];
+            }
+            count--;
+            origin = Arrays.copyOf(dest, dest.length);
+        }
+        bitmap.setPixels(dest, 0, SIZE, 0, 0, SIZE, SIZE);
+        return bitmap;
+    }
+
+    /**
+     * 求模运算
+     */
+    private static int mod(int number, int mod) {
+        return (number % mod + mod) % mod;
     }
 
     // 置乱过程
